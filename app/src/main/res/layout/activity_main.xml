@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Imagem de Fundo com Blur -->
+    <ImageView
+        android:id="@+id/imgBackgroundBlur"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.3"
+        android:src="@drawable/default_album_art"/>
+
+    <!-- Gradiente Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/gradient_overlay"/>
+
+    <!-- Vídeo Visualizer (Opcional, pode remover se quiseres só a imagem) -->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/playerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.15"
+        android:visibility="gone"/>
+
+    <!-- Conteúdo Principal -->
+    <LinearLayout
+        android:id="@+id/normalLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="0dp">
+
+        <!-- Barra Superior Premium -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp">
+
+            <!-- Logo -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_alignParentStart="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🏍"
+                    android:textSize="24sp"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MotoSafe"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"/>
+            </LinearLayout>
+
+            <!-- Status dos Sensores -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_alignParentEnd="true"
+                android:background="@drawable/sensor_badge"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp">
+
+                <View
+                    android:id="@+id/sensorIndicator"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_green"
+                    android:layout_marginEnd="6dp"/>
+
+                <TextView
+                    android:id="@+id/tvSensorStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ACTIVE"
+                    android:textColor="#00FF88"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"/>
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <!-- Espaço Flexível -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <!-- Capa do Álbum (Grande) -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:layout_marginEnd="40dp"
+            android:layout_marginBottom="24dp">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/albumCard"
+                android:layout_width="match_parent"
+                android:layout_height="280dp"
+                android:layout_centerInParent="true"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="24dp">
+
+                <ImageView
+                    android:id="@+id/imgAlbumArt"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/default_album_art"/>
+
+            </androidx.cardview.widget.CardView>
+
+        </RelativeLayout>
+
+        <!-- Informação da Música -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:layout_marginBottom="20dp">
+
+            <!-- Estado (Now Playing) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp">
+
+                <View
+                    android:id="@+id/playIndicator"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:background="@drawable/circle_green"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvPlayState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PAUSED"
+                    android:textColor="#00FF88"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.2"/>
+            </LinearLayout>
+
+            <!-- Título da Música -->
+            <TextView
+                android:id="@+id/tvMusicTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Electric Dreams"
+                android:textColor="#FFFFFF"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="4dp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"/>
+
+            <!-- Artista -->
+            <TextView
+                android:id="@+id/tvArtist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SoundHelix"
+                android:textColor="#CCCCCC"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:layout_marginBottom="20dp"
+                android:fontFamily="sans-serif-light"/>
+
+        </LinearLayout>
+
+        <!-- Player Controls (Barra de Progresso) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/player_controls_background"
+            android:padding="20dp">
+
+            <!-- Barra de Progresso -->
+            <SeekBar
+                android:id="@+id/seekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:progressTint="#00FF88"
+                android:thumbTint="#00FF88"
+                android:progressBackgroundTint="#333333"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Tempo (Atual / Total) -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/tvCurrentTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00"
+                    android:textColor="#AAAAAA"
+                    android:textSize="12sp"
+                    android:layout_alignParentStart="true"
+                    android:fontFamily="monospace"/>
+
+                <TextView
+                    android:id="@+id/tvTotalTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00"
+                    android:textColor="#AAAAAA"
+                    android:textSize="12sp"
+                    android:layout_alignParentEnd="true"
+                    android:fontFamily="monospace"/>
+
+            </RelativeLayout>
+
+            <!-- Botões de Controlo -->
+            <!-- Botões de Controlo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <!-- Botão Shuffle -->
+                <TextView
+                    android:id="@+id/btnShuffle"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="🔀"
+                    android:textSize="18sp"
+                    android:textColor="#666666"
+                    android:gravity="center"
+                    android:background="@drawable/button_shuffle_off"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="8dp"/>
+
+                <!-- Botão Anterior -->
+                <TextView
+                    android:id="@+id/btnPrevious"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="⏮"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/button_control"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="12dp"/>
+
+                <!-- Botão Play/Pause -->
+                <TextView
+                    android:id="@+id/btnPlayPause"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:text="▶"
+                    android:textSize="28sp"
+                    android:textColor="#000000"
+                    android:gravity="center"
+                    android:background="@drawable/button_play"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"/>
+
+                <!-- Botão Próximo -->
+                <TextView
+                    android:id="@+id/btnNext"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="⏭"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/button_control"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="12dp"/>
+
+                <!-- Botão Repeat (opcional) -->
+                <TextView
+                    android:id="@+id/btnRepeat"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="🔁"
+                    android:textSize="18sp"
+                    android:textColor="#666666"
+                    android:gravity="center"
+                    android:background="@drawable/button_shuffle_off"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="8dp"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Controlos Gestuais (Minimalista) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/controls_background"
+            android:padding="16dp">
+
+            <!-- Play/Pause -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👋"
+                    android:textSize="24sp"
+                    android:layout_marginBottom="2dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Play/Pause"
+                    android:textColor="#AAAAAA"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Divisor -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#333333"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"/>
+
+            <!-- Skip -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✋"
+                    android:textSize="24sp"
+                    android:layout_marginBottom="2dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Next Track"
+                    android:textColor="#AAAAAA"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <!-- Divisor -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#333333"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"/>
+
+            <!-- Emergency -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️"
+                    android:textSize="24sp"
+                    android:layout_marginBottom="2dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Emergency"
+                    android:textColor="#AAAAAA"
+                    android:textSize="10sp"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Botão Playlist -->
+        <Button
+            android:id="@+id/btnOpenPlaylist"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="12dp"
+            android:text="🎵  BROWSE PLAYLISTS"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/button_playlist"
+            android:letterSpacing="0.05"/>
+
+        <!-- Rodapé -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ride Safe • Stay Connected"
+            android:textColor="#555555"
+            android:textSize="10sp"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:letterSpacing="0.15"
+            android:fontFamily="sans-serif-light"/>
+
+    </LinearLayout>
+
+    <!-- Layout de Emergência -->
+    <RelativeLayout
+        android:id="@+id/emergencyLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#EE000000"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚠"
+                android:textSize="100sp"
+                android:textColor="#FF3333"
+                android:layout_marginBottom="32dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IMPACT DETECTED"
+                android:textColor="#FF3333"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Emergency protocol activated"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:layout_marginBottom="48dp"
+                android:alpha="0.8"/>
+
+            <Button
+                android:id="@+id/btnCancelAlert"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="I'M OK — CANCEL ALERT"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/button_cancel"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:id="@+id/btnCall112"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="📞  CALL 112"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/button_emergency"
+                android:letterSpacing="0.05"/>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

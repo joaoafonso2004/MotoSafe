@@ -88,6 +88,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     // Controlo de Gestos
+    private var gestureCount = 0
+    private var lastGestureTime = 0L
+    private val GESTURE_TIMEOUT = 500L
+
+    private var freeFallStartTime = 0L
+    private var isInFreeFall = false
+    private var lastAcceleration = 9.8f
     private var gestureStartTime = 0L
     private var isNear = false
 
@@ -365,43 +372,62 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun handleProximity(event: SensorEvent) {
-        if (isEmergencyMode) return // Não processa gestos em modo emergência
+        if (isEmergencyMode) return
 
         val distance = event.values[0]
+        val currentTime = System.currentTimeMillis()
 
-        if (distance < event.sensor.maximumRange) {
+        if (distance <= 5.0) {
             // PERTO
             if (!isNear) {
                 isNear = true
-                gestureStartTime = System.currentTimeMillis()
-                tvSensorStatus.text = "● Gesto..."
+                gestureStartTime = currentTime
+
+                // Verificar se é um gesto múltiplo
+                if (currentTime - lastGestureTime < GESTURE_TIMEOUT) {
+                    gestureCount++
+                } else {
+                    gestureCount = 1
+                }
+
+                tvSensorStatus.text = "● Gesto $gestureCount..."
                 tvSensorStatus.setTextColor(0xFFFFAA00.toInt())
             }
         } else {
             // LONGE
             if (isNear) {
                 isNear = false
-                val gestureDuration = System.currentTimeMillis() - gestureStartTime
+                lastGestureTime = currentTime
 
-                when {
-                    gestureDuration < 500 -> {
-                        // Gesto curto: Play/Pause
-                        togglePlayPause()
+                // Esperar 1 segundo para ver se há mais gestos
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (currentTime == lastGestureTime) {
+                        // Executar ação baseada no número de gestos
+                        when (gestureCount) {
+                            1 -> {
+                                togglePlayPause()
+                                Toast.makeText(this, "⏯️ Play/Pause", Toast.LENGTH_SHORT).show()
+                            }
+                            2 -> {
+                                nextTrack()
+                                Toast.makeText(this, "⏭️ Próxima", Toast.LENGTH_SHORT).show()
+                            }
+                            3 -> {
+                                previousTrackSmart()
+                                Toast.makeText(this, "⏮️ Anterior/Restart", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        gestureCount = 0
+                        tvSensorStatus.text = "● Ativos"
+                        tvSensorStatus.setTextColor(0xFF00FF00.toInt())
                     }
-                    gestureDuration in 500..2500 -> {
-                        // Gesto longo: Skip
-                        nextTrack()
-                    }
-                }
-
-                tvSensorStatus.text = "● Ativos"
-                tvSensorStatus.setTextColor(0xFF00FF00.toInt())
+                }, GESTURE_TIMEOUT)
             }
         }
     }
 
     private fun handleAccelerometer(event: SensorEvent) {
-        if (isEmergencyMode) return // Já está em emergência
+        if (isEmergencyMode) return
 
         val x = event.values[0]
         val y = event.values[1]
@@ -409,11 +435,29 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         val acceleration = sqrt(x * x + y * y + z * z)
 
-        // MODO DEMO: Threshold baixo para demonstração
-        // Para produção real, usar 30.0
-        if (acceleration > 15.0) {  // ← Valor baixo para demo
-            triggerEmergency()
+        // Detetar queda livre (g ≈ 0)
+        if (acceleration < 2.0) {
+            if (!isInFreeFall) {
+                isInFreeFall = true
+                freeFallStartTime = System.currentTimeMillis()
+            } else {
+                // Verifica se está em queda livre há mais de 300ms
+                if (System.currentTimeMillis() - freeFallStartTime > 300) {
+                    triggerEmergency()
+                    Toast.makeText(this, "🚨 Queda detetada!", Toast.LENGTH_LONG).show()
+                }
+            }
+        } else {
+            isInFreeFall = false
         }
+
+        // Detetar impacto forte (g > 20)
+        if (acceleration > 20.0) {
+            triggerEmergency()
+            Toast.makeText(this, "🚨 Impacto detetado!", Toast.LENGTH_LONG).show()
+        }
+
+        lastAcceleration = acceleration
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -537,6 +581,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
         loadTrack(currentPlaylistIndex, currentTrackIndex) // ← Carrega tudo incluindo imagem
+    }
+
+    private fun previousTrackSmart() {
+        val currentPosition = player?.currentPosition ?: 0
+
+        if (currentPosition < 5000) {
+            // Menos de 5 segundos: vai para música anterior
+            previousTrack()
+        } else {
+            // Mais de 5 segundos: recomeça a atual
+            player?.seekTo(0)
+            Toast.makeText(this, "🔄 Restart", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private val seekBarUpdateRunnable = object : Runnable {

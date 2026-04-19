@@ -4,6 +4,7 @@
 
     <!-- PERMISSÕES AQUI (FORA DO <application>) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -46,6 +47,5 @@
         </service>
 
     </application>
-    <!-- NÃO COLOCAR NADA AQUI FORA -->
 
 </manifest>

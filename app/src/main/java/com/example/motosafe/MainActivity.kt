@@ -29,6 +29,7 @@ import android.widget.SeekBar
 import androidx.media3.common.Player
 import android.os.Handler
 import android.os.Looper
+import androidx.core.content.ContextCompat.startActivity
 import coil.load
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var tvArtist: TextView
     private lateinit var tvPlayState: TextView
     private lateinit var btnCancelAlert: Button
+    private lateinit var btnCall112: Button
 
     private lateinit var seekBar: SeekBar
 
@@ -61,7 +63,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var btnPrevious: TextView
 
     private lateinit var btnNext: TextView
-    private lateinit var btnCall112: Button
 
     private lateinit var imgAlbumArt: ImageView
 
@@ -141,9 +142,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         setupPlayerControls()
 
-        // Criar botão de chamada 112 programaticamente
-        createCall112Button()
-
         // Inicializar Sensores
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
@@ -152,10 +150,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         // Inicializar Player
         initializePlayer()
 
+
+        // Criar botão de chamada 112
+        createCall112Button()
+
         // Botão Cancelar Alerta
         btnCancelAlert.setOnClickListener {
             cancelEmergency()
         }
+
         // MODO DEMO: Clique longo no título ativa emergência
         findViewById<TextView>(R.id.tvMusicTitle).setOnLongClickListener {
             if (!isEmergencyMode) {
@@ -172,25 +175,24 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun createCall112Button() {
-        // Criar botão programaticamente
         btnCall112 = Button(this).apply {
             text = "📞 LIGAR PARA 112"
             textSize = 18f
             setPadding(20, 60, 20, 60)
             setBackgroundColor(0xFFFF6600.toInt())
             setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+            layoutParams = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                topMargin = 24
+                addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+                setMargins(40, 0, 40, 40)
             }
             setOnClickListener {
                 showCall112Confirmation()
             }
         }
 
-        // Adicionar ao layout de emergência
         emergencyLayout.addView(btnCall112)
     }
 

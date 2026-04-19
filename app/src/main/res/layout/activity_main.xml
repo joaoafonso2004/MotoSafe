@@ -519,17 +519,6 @@
                 android:letterSpacing="0.05"
                 android:layout_marginBottom="16dp"/>
 
-            <Button
-                android:id="@+id/btnCall112"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:text="📞  CALL 112"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:background="@drawable/button_emergency"
-                android:letterSpacing="0.05"/>
-
         </LinearLayout>
 
     </RelativeLayout>

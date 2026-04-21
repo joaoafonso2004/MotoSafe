@@ -1,8 +1,10 @@
 package com.example.motosafe
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -12,6 +14,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.view.View
 import android.widget.Button
@@ -25,10 +28,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import android.os.Build
 import coil.load
 import kotlin.math.sqrt
 
@@ -54,9 +56,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var btnNext: TextView
     private lateinit var imgAlbumArt: ImageView
     private lateinit var imgBackgroundBlur: ImageView
-
-    // ExoPlayer
-    private var player: ExoPlayer? = null
 
     // Sensores
     private lateinit var sensorManager: SensorManager
@@ -91,6 +90,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     // Player modes
     private var isShuffleEnabled = false
     private var isRepeatEnabled = false
+
+    // Propriedade auxiliar para aceder ao player do service de forma segura
+    private val player get() = musicService?.getPlayer()
+
+    private var musicService: MusicService? = null
+
+    private var isServiceBound = false
 
     private var lightSensor: Sensor? = null
 
@@ -164,8 +170,18 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         updateSensorAvailabilityUI()
 
-        // Player
-        initializePlayer()
+        val intent = Intent(this, MusicService::class.java)
+        startService(intent)
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+
+        // Pedir permissão de notificações em Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 200)
+            }
+        }
 
         // Botão 112
         createCall112Button()
@@ -190,25 +206,20 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun initializePlayer() {
-        player = ExoPlayer.Builder(this).build()
-        playerView.player = player
-
+    private fun initializePlayerListener() {
         player?.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                updatePlayState()
-                if (isPlaying) {
-                    startSeekBarUpdate()
-                } else {
-                    stopSeekBarUpdate()
+                runOnUiThread {
+                    updatePlayState()
+                    if (isPlaying) startSeekBarUpdate() else stopSeekBarUpdate()
                 }
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) {
-                    onTrackEnded()
+                runOnUiThread {
+                    if (playbackState == Player.STATE_ENDED) onTrackEnded()
+                    updatePlayState()
                 }
-                updatePlayState()
             }
         })
     }
@@ -291,10 +302,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         currentPlaylistIndex = playlistIndex
         currentTrackIndex = trackIndex
 
-        val mediaItem = MediaItem.fromUri(track.url)
-        player?.setMediaItem(mediaItem)
-        player?.prepare()
-        player?.play()
+        // Delegar ao MusicService — ele é o único dono do player
+        musicService?.loadTrack(playlistIndex, trackIndex)
 
         tvMusicTitle.text = track.title
         tvArtist.text = track.artist
@@ -622,9 +631,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onStop() {
         super.onStop()
-        if (isFinishing) {
-            player?.pause()
-        }
+        // Não pausar aqui — o MusicService mantém a música em background
     }
 
     override fun onDestroy() {
@@ -633,8 +640,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         stopSeekBarUpdate()
         sensorManager.unregisterListener(this)
         playerView.player = null
-        player?.release()
-        player = null
+        // NÃO libertar o player aqui — pertence ao MusicService
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
+        }
         alarmPlayer?.release()
         alarmPlayer = null
     }
@@ -747,6 +757,26 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         } else {
             btnRepeat.setBackgroundResource(R.drawable.button_shuffle_off)
             btnRepeat.setTextColor(0xFF666666.toInt())
+        }
+    }
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as MusicService.MusicBinder
+            musicService = binder.getService()
+            isServiceBound = true
+
+            // Ligar o player do service ao PlayerView
+            playerView.player = musicService?.getPlayer()
+
+            // Registar listener agora que o player existe
+            initializePlayerListener()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isServiceBound = false
+            musicService = null
+            playerView.player = null
         }
     }
 

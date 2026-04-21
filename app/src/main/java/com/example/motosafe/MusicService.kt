@@ -21,6 +21,7 @@ class MusicService : Service() {
 
     private var currentPlaylistIndex = 0
     private var currentTrackIndex = 0
+    private var hasLoadedTrack = false
 
     companion object {
         const val CHANNEL_ID = "MusicServiceChannel"
@@ -49,13 +50,32 @@ class MusicService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY -> player?.play()
-            ACTION_PAUSE -> player?.pause()
-            ACTION_NEXT -> nextTrack()
-            ACTION_PREVIOUS -> previousTrack()
-            ACTION_STOP -> stopSelf()
+            ACTION_PLAY -> {
+                if (hasLoadedTrack) {
+                    player?.play()
+                    updateNotification()
+                }
+            }
+
+            ACTION_PAUSE -> {
+                player?.pause()
+                updateNotification()
+            }
+
+            ACTION_NEXT -> {
+                nextTrack()
+            }
+
+            ACTION_PREVIOUS -> {
+                previousTrack()
+            }
+
+            ACTION_STOP -> {
+                stopPlaybackAndService()
+            }
         }
-        return START_STICKY
+
+        return START_NOT_STICKY
     }
 
     private fun initializePlayer() {
@@ -69,51 +89,68 @@ class MusicService : Service() {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_ENDED) {
                     nextTrack()
+                } else {
+                    updateNotification()
                 }
             }
         })
     }
 
-    fun loadTrack(playlistIndex: Int, trackIndex: Int) {
+    private fun getCurrentPlaylistOrNull(): Playlist? {
+        return MusicLibrary.playlists.getOrNull(currentPlaylistIndex)
+    }
+
+    private fun getCurrentTrackOrNull(): Track? {
+        val playlist = getCurrentPlaylistOrNull() ?: return null
+        return playlist.tracks.getOrNull(currentTrackIndex)
+    }
+
+    fun loadTrack(playlistIndex: Int, trackIndex: Int): Boolean {
+        val playlist = MusicLibrary.playlists.getOrNull(playlistIndex) ?: return false
+        if (playlist.tracks.isEmpty()) return false
+
+        val track = playlist.tracks.getOrNull(trackIndex) ?: return false
+
         currentPlaylistIndex = playlistIndex
         currentTrackIndex = trackIndex
+        hasLoadedTrack = true
 
-        val track = MusicLibrary.playlists[playlistIndex].tracks[trackIndex]
         val mediaItem = MediaItem.fromUri(track.url)
-
         player?.setMediaItem(mediaItem)
         player?.prepare()
         player?.play()
 
         startForeground(NOTIFICATION_ID, createNotification())
+        return true
     }
 
     fun getPlayer(): ExoPlayer? = player
 
-    fun getCurrentTrack(): Track {
-        return MusicLibrary.playlists[currentPlaylistIndex].tracks[currentTrackIndex]
+    fun getCurrentTrack(): Track? {
+        return getCurrentTrackOrNull()
     }
 
-    fun getCurrentPlaylistIndex() = currentPlaylistIndex
-    fun getCurrentTrackIndex() = currentTrackIndex
+    fun getCurrentPlaylistIndex(): Int = currentPlaylistIndex
+
+    fun getCurrentTrackIndex(): Int = currentTrackIndex
 
     fun nextTrack() {
-        val playlist = MusicLibrary.playlists[currentPlaylistIndex]
-        if (currentTrackIndex < playlist.tracks.size - 1) {
-            currentTrackIndex++
-        } else {
-            currentTrackIndex = 0
-        }
+        val playlist = getCurrentPlaylistOrNull() ?: return
+        if (playlist.tracks.isEmpty()) return
+
+        currentTrackIndex =
+            if (currentTrackIndex < playlist.tracks.size - 1) currentTrackIndex + 1 else 0
+
         loadTrack(currentPlaylistIndex, currentTrackIndex)
     }
 
     fun previousTrack() {
-        if (currentTrackIndex > 0) {
-            currentTrackIndex--
-        } else {
-            val playlist = MusicLibrary.playlists[currentPlaylistIndex]
-            currentTrackIndex = playlist.tracks.size - 1
-        }
+        val playlist = getCurrentPlaylistOrNull() ?: return
+        if (playlist.tracks.isEmpty()) return
+
+        currentTrackIndex =
+            if (currentTrackIndex > 0) currentTrackIndex - 1 else playlist.tracks.size - 1
+
         loadTrack(currentPlaylistIndex, currentTrackIndex)
     }
 
@@ -134,10 +171,11 @@ class MusicService : Service() {
     }
 
     private fun createNotification(): Notification {
-        val track = getCurrentTrack()
+        val track = getCurrentTrackOrNull()
 
         val playPauseIntent = PendingIntent.getService(
-            this, 0,
+            this,
+            0,
             Intent(this, MusicService::class.java).apply {
                 action = if (player?.isPlaying == true) ACTION_PAUSE else ACTION_PLAY
             },
@@ -145,28 +183,47 @@ class MusicService : Service() {
         )
 
         val previousIntent = PendingIntent.getService(
-            this, 1,
-            Intent(this, MusicService::class.java).apply { action = ACTION_PREVIOUS },
+            this,
+            1,
+            Intent(this, MusicService::class.java).apply {
+                action = ACTION_PREVIOUS
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val nextIntent = PendingIntent.getService(
-            this, 2,
-            Intent(this, MusicService::class.java).apply { action = ACTION_NEXT },
+            this,
+            2,
+            Intent(this, MusicService::class.java).apply {
+                action = ACTION_NEXT
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val stopIntent = PendingIntent.getService(
+            this,
+            3,
+            Intent(this, MusicService::class.java).apply {
+                action = ACTION_STOP
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val contentIntent = PendingIntent.getActivity(
-            this, 0,
-            Intent(this, MainActivity::class.java),
+            this,
+            4,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(track.title)
-            .setContentText(track.artist)
+            .setContentTitle(track?.title ?: "MotoSafe")
+            .setContentText(track?.artist ?: "Sem música carregada")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(contentIntent)
+            .setOnlyAlertOnce(true)
             .addAction(R.drawable.ic_launcher_foreground, "Previous", previousIntent)
             .addAction(
                 R.drawable.ic_launcher_foreground,
@@ -174,22 +231,32 @@ class MusicService : Service() {
                 playPauseIntent
             )
             .addAction(R.drawable.ic_launcher_foreground, "Next", nextIntent)
-            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(0, 1, 2))
+            .addAction(R.drawable.ic_launcher_foreground, "Stop", stopIntent)
+            .setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
+            .setOngoing(player?.isPlaying == true)
             .build()
     }
 
     private fun updateNotification() {
-        val notification = createNotification()
         val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, notification)
+        manager.notify(NOTIFICATION_ID, createNotification())
+    }
+
+    private fun stopPlaybackAndService() {
+        player?.pause()
+        player?.stop()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        stopForeground(STOP_FOREGROUND_REMOVE)
         player?.release()
         player = null
+        super.onDestroy()
     }
 }
